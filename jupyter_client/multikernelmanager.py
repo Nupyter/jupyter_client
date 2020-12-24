@@ -3,6 +3,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
+import json
 import os
 import uuid
 import socket
@@ -173,15 +174,24 @@ class MultiKernelManager(LoggingConfigurable):
         )
         return km, kernel_name, kernel_id
 
-    def start_kernel(self, kernel_name=None, **kwargs):
+    def start_kernel(self, kernel_name=None, connection_file=None, **kwargs):
         """Start a new kernel.
 
         The caller can pick a kernel_id by passing one in as a keyword arg,
         otherwise one will be generated using new_kernel_id().
 
         The kernel ID for the newly started kernel is returned.
+        
+        The kernel will use ports specified in the connection file if provided.
         """
         km, kernel_name, kernel_id = self.pre_start_kernel(kernel_name, kwargs)
+        
+        if connection_file:            
+            with open(connection_file) as f:
+                config = json.load(f)
+            for k, v in config.items():
+                setattr(km, k, v)
+        
         km.start_kernel(**kwargs)
         self._kernels[kernel_id] = km
         return kernel_id
